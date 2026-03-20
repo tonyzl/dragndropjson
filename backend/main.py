@@ -12,7 +12,7 @@ import fitz  # PyMuPDF
 from PIL import Image
 import pytesseract
 from typing import List
-from src.agents.extraction_agent import  extract_and_save_form_data
+from src.agents.extraction_agent import  extract_from_pdf, extract_from_image
 
 
 # Load environment variables
@@ -31,47 +31,7 @@ app.add_middleware(
 )
 
 
-def extract_words_from_text(text: str) -> List[str]:
-    words = re.findall(r'\b\w+\b', text)
-    return [w for w in words if w.strip()]
 
-
-def extract_from_pdf(file_bytes: bytes) -> List[str]:
-    doc = fitz.open(stream=file_bytes, filetype="pdf")
-    full_text = ""
-    for page in doc:
-        full_text += page.get_text()
-    doc.close()
-    return extract_words_from_text(full_text)
-
-
-def extract_from_image(file_bytes: bytes) -> List[str]:
-    base64_image = base64.b64encode(file_bytes).decode("utf-8")
-
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{base64_image}"
-                        },
-                    },
-                    {
-                        "type": "text",
-                        "text": "Extract all words from this image. Return only the words, one per line, with no extra commentary."
-                    }
-                ],
-            }
-        ],
-    )
-
-    text = response.choices[0].message.content
-    print(text)
-    return extract_words_from_text(text)
 
 
 @app.post("/extract")
@@ -111,6 +71,9 @@ async def extract_words(
                 detail=f"Failed to process '{filename}': {str(e)}"
             )
 
+    
+    # redefinir results para generar un json acorde a models.py
+    
     return JSONResponse(content=results)
 
 
