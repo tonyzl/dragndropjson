@@ -1,33 +1,23 @@
 # File Word Extractor
 
-Upload **two files** (PDF or images) and get back a JSON with every extracted word.
+Upload **two files** (PDF or images) and get back a JSON well formatted usig pydantic and with legal advices.
 
 ## Stack
 
 | Layer | Tech |
 |---|---|
-| Backend | FastAPI + PyMuPDF + Tesseract OCR |
+| Backend | FastAPI + langchain+ Langfuse + OpenAI |
 | Frontend | React 18 + Vite 5 |
 
 ---
 
 ## Setup & Run
 
-### 1. Install Tesseract (system dependency)
+### 1. Clonar / descomprimir el proyecto
 
-**Ubuntu/Debian:**
 ```bash
-sudo apt-get install tesseract-ocr tesseract-ocr-eng
+cd dragndropjson
 ```
-
-**macOS:**
-```bash
-brew install tesseract
-```
-
-**Windows:**
-Download installer: https://github.com/UB-Mannheim/tesseract/wiki  
-Then add tesseract to your PATH.
 
 ---
 
@@ -86,6 +76,6 @@ Supported formats: PDF · PNG · JPG · WEBP · TIFF · BMP
 
 ## How it works
 
-- **PDF** → PyMuPDF extracts text natively (no OCR needed for digital PDFs)
-- **Images** → Tesseract OCR reads text from scanned docs or photos
+- **PDF** → gpt-4o reads the pdf and extract the text
+- **Images** → gpt-4o reads the image and extract the text
 - **Proxy** → Vite forwards `/extract` to FastAPI, so no CORS issues
