@@ -71,9 +71,11 @@ def extract_from_pdf(file_bytes: bytes) -> list[str]:
         )
 
         raw_text = response.choices[0].message.content
+        all_words.extend(extract_words_from_text(raw_text))
+        
 
     doc.close()
-    return extract_words_from_text(raw_text)
+    return all_words
 
 @observe(name="extract_from_image", as_type="generation")
 def extract_from_image(file_bytes: bytes) -> List[str]:
