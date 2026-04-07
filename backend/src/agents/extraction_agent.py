@@ -1,94 +1,39 @@
+"""
+extraction_agent.py — Agente especializado en comparar y analizar el contenido de los mismos .
+
+
+"""
+
+from __future__ import annotations
+from typing import List, Dict, Any, Optional
 import os
-import re
-import base64
-import fitz  # PyMuPDF
-from openai import OpenAI
-from dotenv import load_dotenv
-import io
-from PIL import Image
-from typing import List
-
-# Pydantic Schema for structured output
-from src.models import FormFields
+import math
 
 
-# Load environment variables
-load_dotenv()
+class ExtractionAgent:
+    def __init__(self):
+        self.system_prompt = """
+        Eres un Agente de Extracción de Diferencias Legales.
+        Tu objetivo es identificar adiciones, eliminaciones y modificaciones específicas.
+        Utiliza el 'Mapa de Correspondencia' del analista anterior y los textos originales.
+        Debes responder EXCLUSIVAMENTE en formato JSON que cumpla con el esquema Pydantic definido.
+        """
 
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-
-def extract_words_from_text(text: str) -> List[str]:
-    words = re.findall(r'\b\w+\b', text)
-    return [w for w in words if w.strip()]
-
-
-
-
-
-def extract_from_pdf(file_bytes: bytes) -> list[str]:
-    #client = OpenAI()
-    doc = fitz.open(stream=file_bytes, filetype="pdf")
-    
-    all_words = []
-
-    for page in doc:
-        # Render page to image (2x zoom for better resolution)
-        mat = fitz.Matrix(2, 2)
-        pix = page.get_pixmap(matrix=mat)
-        img_bytes = pix.tobytes("jpeg")
-        base64_image = base64.b64encode(img_bytes).decode("utf-8")
-
+    def run(self, context_map, original_text, amendment_text, parent_trace):
+        span = parent_trace.span(name="extraction_agent")
+        
         response = client.chat.completions.create(
             model="gpt-4o",
+            response_format={"type": "json_object"},
             messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
-                        },
-                        {
-                            "type": "text",
-                            "text": "Extract all words from this image. Return only the words, one per line, with no extra commentary."
-                        }
-                    ],
-                }
-            ],
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": f"CONTEXTO: {context_map}\n\nTEXTOS:\nOriginal: {original_text}\nAdenda: {amendment_text}"}
+            ]
         )
-
-        raw_text = response.choices[0].message.content
-
-    doc.close()
-    return extract_words_from_text(raw_text)
-
-
-def extract_from_image(file_bytes: bytes) -> List[str]:
-    base64_image = base64.b64encode(file_bytes).decode("utf-8")
-
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{base64_image}"
-                        },
-                    },
-                    {
-                        "type": "text",
-                        "text": "Extract all words from this image. Return only the words, one per line, with no extra commentary."
-                    }
-                ],
-            }
-        ],
-    )
-
-    text = response.choices[0].message.content
-
-    return extract_words_from_text(text)
+        
+        raw_json = response.choices[0].message.content
+        # Validación Pydantic
+        validated_data = ContractChangeOutput.model_validate_json(raw_json)
+        
+        span.end(output=validated_data.model_dump())
+        return validated_data

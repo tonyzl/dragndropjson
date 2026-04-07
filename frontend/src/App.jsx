@@ -157,7 +157,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <div className="header__tag">v1.0 · OCR ENGINE</div>
+        <div className="header__tag">v1.0 · GPT-4o ENGINE</div>
         <h1 className="header__title">LEGAL<br />MOVE</h1>
         <p className="header__sub">Drop two files. Get every word as JSON.</p>
       </header>
@@ -200,6 +200,12 @@ export default function App() {
               <span>RESULTS</span>
               <div className="results-header__line" />
             </div>
+            <div className="full-json-wrap">
+              <details>
+                <summary>Full JSON response</summary>
+                <pre className="json-view json-view--full">{JSON.stringify(results, null, 2)}</pre>
+              </details>
+            </div>
             <div className="results-grid">
               {Object.entries(results).map(([fname, data]) => (
                 <ResultPanel key={fname} filename={fname} data={data} />
@@ -216,7 +222,7 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        FastAPI · PyMuPDF · Tesseract OCR · React + Vite
+        FastAPI  · gpt-4o · LangChain · Langfuse · React + Vite
       </footer>
 
       <style>{`
