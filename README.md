@@ -24,7 +24,7 @@ El sistema transforma píxeles de imágenes o PDFs en conocimiento legal estruct
 
 ```mermaid
 graph TD
-    Start([Subida de Archivos]) --> Vision[Extracción Multimodal / OCR]
+    Start([Subida de Archivos]) --> Vision[Extracción Multimodal / GPT-4o ]
     Vision --> Parsing[Estructura Técnica: words & word_count]
     Parsing --> Agent1[Agente 1: Contextualización]
     Agent1 -->|Mapa de Relaciones| Agent2[Agente 2: Extracción de Cambios]
