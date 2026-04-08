@@ -34,10 +34,11 @@ graph TD
     style Agent2 fill:#bbf,stroke:#333,stroke-width:2px
     style Validation fill:#dfd,stroke:#333,stroke-width:2px
 
+```    
 
 
 
-## Setup & Run
+### ⚙️ Instalación
 
 ### 1. Clonar / descomprimir el proyecto
 
@@ -45,7 +46,13 @@ graph TD
 cd dragndropjson
 ```
 
----
+### Crear entorno virtual (recomendado)
+
+```bash
+python -m venv venv
+source venv/bin/activate        # macOS/Linux
+venv\Scripts\activate           # Windows
+```
 
 ### 2. Backend
 
