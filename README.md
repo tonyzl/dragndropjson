@@ -47,18 +47,17 @@ graph TD
 cd dragndropjson
 ```
 
-### Crear entorno virtual (recomendado)
-
-```bash
-python -m venv venv
-source venv/bin/activate        # macOS/Linux
-venv\Scripts\activate           # Windows
-```
 
 ### 2. Backend
 
+
 ```bash
 cd backend
+
+python -m venv venv             # Crear entorno virtual(r ecomendado)
+source venv/bin/activate        # macOS/Linux
+venv\Scripts\activate           # Windows
+
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
