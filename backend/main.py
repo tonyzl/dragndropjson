@@ -4,6 +4,8 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from langfuse import observe
+
 # Importación de parsers propios
 from src.image_parser import extract_from_pdf, extract_from_image
 
@@ -13,6 +15,12 @@ from src.agents.contextualization_agent import ContextualizationAgent
 from src.agents.extraction_agent import ExtractionAgent
 
 load_dotenv()
+
+# Verificar que las API keys estén configuradas
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY")
+LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY")
+LANGFUSE_HOST = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
 
 app = FastAPI(title="LegalMove - Contract Comparison API")
 
@@ -24,6 +32,7 @@ app.add_middleware(
 )
 
 @app.post("/extract")
+@observe(name="init_pipeline for contract comparison LegalMove", as_type="generation")
 async def extract_words(
     file1: UploadFile = File(...),
     file2: UploadFile = File(...)
@@ -54,7 +63,8 @@ async def extract_words(
     texto_contrato = " ".join(listas[0])
     texto_adenda = " ".join(listas[1])
 
-    # 3. Flujo de Agentes (Sin Try-Except para ver errores directos)
+    # 3. Flujo de Agentes 
+    
     # Agente 1: Contexto
     agente1 = ContextualizationAgent()
     context_response = agente1.get_chain().invoke({

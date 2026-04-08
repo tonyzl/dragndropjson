@@ -200,17 +200,15 @@ export default function App() {
               <span>RESULTS</span>
               <div className="results-header__line" />
             </div>
-            <div className="full-json-wrap">
-              <details>
-                <summary>Full JSON response</summary>
-                <pre className="json-view json-view--full">{JSON.stringify(results, null, 2)}</pre>
-              </details>
+            <div className="results-grid">
+              {Object.entries(results.document_data).map(([fname, data]) => (
+                <ResultPanel key={fname} filename={fname} data={data} />
+              ))}
             </div>
-
             <div className="full-json-wrap">
               <details>
                 <summary>Full JSON response</summary>
-                <pre className="json-view json-view--full">{JSON.stringify(results, null, 2)}</pre>
+                <pre className="json-view json-view--full">{JSON.stringify(results.legal_analysis, null, 2)}</pre>
               </details>
             </div>
           </section>

@@ -1,7 +1,25 @@
+import os
+from dotenv import load_dotenv
+
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from src.models import ContractChangeOutput
 
+
+from langfuse import observe
+
+
+# Load environment variables
+load_dotenv()
+
+
+# Verificar que las API keys estén configuradas
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY")
+LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY")
+LANGFUSE_HOST = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
+
+@observe(name="extraction_agent", as_type="generation")
 class ExtractionAgent:
     def __init__(self, model_name="gpt-4o"):
         self.llm = ChatOpenAI(model=model_name, temperature=0)
