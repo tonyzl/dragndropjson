@@ -102,9 +102,20 @@ def build_dragndrop_system(
     return orchestrator
 '''
 
+@observe(name="procesar_diccionario_contratos", as_type="generation")
+def procesar_diccionario_contratos(datos_dict):
+    """
+    Recibe un diccionario y devuelve las listas de palabras
+    sin los nombres de los archivos.
+    """
+    # Extraemos solo la lista de 'words' de cada valor en el diccionario
+    listas_de_palabras = [info['words'] for info in datos_dict.values()]
+    
+    return listas_de_palabras
+
 
 @app.post("/extract")
-@observe(name="extract_words", as_type="generation")
+@observe(name="init_extract", as_type="generation")
 async def extract_words(
     file1: UploadFile = File(...),
     file2: UploadFile = File(...)
@@ -143,7 +154,17 @@ async def extract_words(
 
 
 
-
+    # aca llegan los resultados para los agentes
+    #print(results)
+    info_contratos=results  
+    resultado = procesar_diccionario_contratos(info_contratos)
+    #print(resultado)
+    lista_contratos=resultado[0]
+    lista_adenda=resultado[1]
+    print(lista_contratos)
+    print(lista_adenda)    
+    
+    
 
 
     # redefinir results para generar un json acorde a models.py
