@@ -27,7 +27,7 @@ class ExtractionAgent:
         self.structured_llm = self.llm.with_structured_output(ContractChangeOutput)
         
         self.prompt = ChatPromptTemplate.from_messages([
-            ("system", "Eres un Especialista en Auditoría Legal. Extrae cambios precisos en formato JSON."),
+            ("system", "Eres un Especialista en Auditoría Legal. Extrae cambios precisos en formato JSON con buena redaccion."),
             ("human", "MAPA: {context_map}\n\nORIGINAL: {original_text}\n\nADENDA: {adenda_text}")
         ])
 

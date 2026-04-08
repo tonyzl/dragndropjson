@@ -205,12 +205,44 @@ export default function App() {
                 <ResultPanel key={fname} filename={fname} data={data} />
               ))}
             </div>
-            <div className="full-json-wrap">
-              <details>
-                <summary>Full JSON response</summary>
-                <pre className="json-view json-view--full">{JSON.stringify(results.legal_analysis, null, 2)}</pre>
-              </details>
+
+            <div className="legal-panel">
+              <div className="legal-panel__header">
+                <span className="legal-panel__badge">AI AUDIT</span>
+                <h3 className="legal-panel__title">Análisis de Cambios Legales</h3>
+              </div>
+
+              <div className="legal-panel__content">
+                {/* Resumen Ejecutivo */}
+                <div className="legal-panel__section">
+                  <h4>RESUMEN DEL CAMBIO</h4>
+                  <p className="legal-panel__summary">{results.legal_analysis.summary_of_the_change}</p>
+                </div>
+
+                <div className="legal-panel__grid">
+                  {/* Cláusulas Afectadas */}
+                  <div className="legal-panel__sub-section">
+                    <h4>SECCIONES MODIFICADAS</h4>
+                    <div className="legal-panel__tags">
+                      {results.legal_analysis.sections_changed.map((section, i) => (
+                        <span key={i} className="tag tag--section">{section}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Temas Tocados */}
+                  <div className="legal-panel__sub-section">
+                    <h4>TEMAS CLAVE</h4>
+                    <div className="legal-panel__tags">
+                      {results.legal_analysis.topics_touched.map((topic, i) => (
+                        <span key={i} className="tag tag--topic">{topic}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+
           </section>
         )}
       </main>
@@ -538,7 +570,7 @@ export default function App() {
         .word-badge {
           background: rgba(232,255,71,0.07);
           border: 1px solid rgba(232,255,71,0.15);
-          color: rgba(232,255,71,0.8);
+          color: white;
           font-size: 11px;
           padding: 3px 8px;
           letter-spacing: 0.03em;
@@ -577,6 +609,91 @@ export default function App() {
         }
         .full-json-wrap summary:hover { color: var(--text); }
         .full-json-wrap[open] summary { border-bottom: 1px solid var(--border); }
+
+        /* LEGAL PANEL - AUDIT LOOK */
+.legal-panel {
+  margin-top: 32px;
+  border: 1px solid var(--accent);
+  background: rgba(232,255,71,0.02);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.legal-panel__header {
+  padding: 16px 24px;
+  background: rgba(232,255,71,0.05);
+  border-bottom: 1px solid var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.legal-panel__badge {
+  font-size: 9px;
+  background: var(--accent);
+  color: var(--bg);
+  padding: 2px 6px;
+  font-weight: 800;
+  border-radius: 2px;
+}
+
+.legal-panel__title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.legal-panel__content {
+  padding: 24px;
+}
+
+.legal-panel__section h4, .legal-panel__sub-section h4 {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  margin-bottom: 12px;
+}
+
+.legal-panel__summary {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  margin-bottom: 24px;
+  border-left: 2px solid var(--accent);
+  padding-left: 20px;
+}
+
+.legal-panel__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.legal-panel__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 2px;
+  border: 1px solid;
+}
+
+.tag--section {
+  background: rgba(77,255,180,0.05);
+  border-color: rgba(77,255,180,0.2);
+  color: #4dffb4;
+}
+
+.tag--topic {
+  background: rgba(232,255,71,0.05);
+  border-color: rgba(232,255,71,0.2);
+  color: var(--accent);
+}
 
         /* FOOTER */
         .footer {
