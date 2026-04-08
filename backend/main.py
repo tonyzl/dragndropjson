@@ -39,7 +39,7 @@ async def extract_words(
 ):
     results_parsing = {}
 
-    # 1. Parsing Multimodal / OCR
+    # 1. Parsing Multimodal / gpt-4o
     for upload_file in [file1, file2]:
         content = await upload_file.read()
         filename = upload_file.filename or "unknown"

@@ -11,6 +11,32 @@ Upload **two files** (PDF or images) and get back a JSON well formatted usig pyd
 
 ---
 
+# 🚀 LegalMove: Agente Autónomo de Comparación de Contratos
+
+Este sistema utiliza Inteligencia Artificial multimodal y una arquitectura de **Multi-Agentes** para automatizar la auditoría de contratos legales. El pipeline procesa documentos originales y sus adendas para extraer cambios, evaluar impactos y generar reportes estructurados.
+
+---
+
+## 🏗️ Flujo del Pipeline (Arquitectura)
+
+El sistema transforma píxeles de imágenes o PDFs en conocimiento legal estructurado siguiendo este flujo:
+
+```mermaid
+graph TD
+    Start([Subida de Archivos]) --> Vision[Extracción Multimodal / OCR]
+    Vision --> Parsing[Estructura Técnica: words & word_count]
+    Parsing --> Agent1[Agente 1: Contextualización]
+    Agent1 -->|Mapa de Relaciones| Agent2[Agente 2: Extracción de Cambios]
+    Agent2 --> Validation[Validación Pydantic]
+    Validation --> Output([JSON Final Consolidado])
+
+    style Agent1 fill:#f9f,stroke:#333,stroke-width:2px
+    style Agent2 fill:#bbf,stroke:#333,stroke-width:2px
+    style Validation fill:#dfd,stroke:#333,stroke-width:2px
+
+
+
+
 ## Setup & Run
 
 ### 1. Clonar / descomprimir el proyecto
