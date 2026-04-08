@@ -1,10 +1,7 @@
 from pydantic import BaseModel, Field
+from typing import List
 
-
-# Pydantic Schema for structured output
-class FormFields(BaseModel):
-    Nombre_Completo: str = Field(description="Nombre completo extraído del formulario.")
-    Fecha_de_Nacimiento: str = Field(description="Fecha de nacimiento en formato YYYY-MM-DD si es posible.")
-    Numero_de_Documento: str = Field(description="Número de documento o identificación encontrado.")
-    Monto_Solicitado: str = Field(description="Monto solicitado en el formulario.")
-    Firma: str = Field(description="Indicar 'Presente' o 'Ausente' según se detecte la firma.")
+class ContractChangeOutput(BaseModel):
+    sections_changed: List[str] = Field(description="Lista de los nombres de las cláusulas que sufrieron cambios.")
+    topics_touched: List[str] = Field(description="Categorías legales/comerciales afectadas.")
+    summary_of_the_change: str = Field(description="Descripción detallada de los cambios encontrados.")

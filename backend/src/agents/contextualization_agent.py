@@ -1,43 +1,18 @@
-"""
-hr_agent.py — Agente especializado en Recursos Humanos.
-
-Responde preguntas sobre:
-- Políticas de vacaciones y permisos
-- Beneficios corporativos
-- Compensación y salarios
-- Onboarding y offboarding
-- Desempeño y desarrollo profesional
-- Código de conducta
-"""
-
-from __future__ import annotations
-from typing import List, Dict, Any, Optional
-import os
-import math
-import json
-from pathlib import Path
-
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
 
 class ContextualizationAgent:
-    def __init__(self):
-        self.system_prompt = """
-        Eres un Analista Legal Senior especializado en Estructura de Contratos.
-        Tu tarea es recibir el texto de un contrato original y su adenda.
-        Debes generar un 'Mapa de Correspondencia'. Identifica qué secciones se mantienen, 
-        cuáles se mencionan en la adenda y cuál es el propósito de la modificación.
-        No extraigas cambios detallados, solo mapea la estructura.
-        """
+    def __init__(self, model_name="gpt-4o"):
+        self.llm = ChatOpenAI(model=model_name, temperature=0)
+        self.prompt = ChatPromptTemplate.from_template("""
+            Eres un Analista Legal Senior. Tu objetivo es mapear la estructura de dos documentos.
+            
+            CONTRATO ORIGINAL: {contrato_text}
+            ADENDA: {adenda_text}
+            
+            Identifica qué secciones del contrato original están siendo afectadas por la adenda. 
+            No extraigas cambios detallados aún, solo crea el mapa contextual.
+        """)
 
-    def run(self, original_text, amendment_text, parent_trace):
-        span = parent_trace.span(name="contextualization_agent")
-        
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": f"CONTRATO ORIGINAL:\n{original_text}\n\nADENDA:\n{amendment_text}"}
-            ]
-        )
-        result = response.choices[0].message.content
-        span.end(output=result)
-        return result
+    def get_chain(self):
+        return self.prompt | self.llm

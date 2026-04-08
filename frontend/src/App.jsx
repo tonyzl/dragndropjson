@@ -206,11 +206,7 @@ export default function App() {
                 <pre className="json-view json-view--full">{JSON.stringify(results, null, 2)}</pre>
               </details>
             </div>
-            <div className="results-grid">
-              {Object.entries(results).map(([fname, data]) => (
-                <ResultPanel key={fname} filename={fname} data={data} />
-              ))}
-            </div>
+
             <div className="full-json-wrap">
               <details>
                 <summary>Full JSON response</summary>

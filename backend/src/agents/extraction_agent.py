@@ -1,39 +1,17 @@
-"""
-extraction_agent.py — Agente especializado en comparar y analizar el contenido de los mismos .
-
-
-"""
-
-from __future__ import annotations
-from typing import List, Dict, Any, Optional
-import os
-import math
-
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from src.models import ContractChangeOutput
 
 class ExtractionAgent:
-    def __init__(self):
-        self.system_prompt = """
-        Eres un Agente de Extracción de Diferencias Legales.
-        Tu objetivo es identificar adiciones, eliminaciones y modificaciones específicas.
-        Utiliza el 'Mapa de Correspondencia' del analista anterior y los textos originales.
-        Debes responder EXCLUSIVAMENTE en formato JSON que cumpla con el esquema Pydantic definido.
-        """
+    def __init__(self, model_name="gpt-4o"):
+        self.llm = ChatOpenAI(model=model_name, temperature=0)
+        # Aquí es donde Pydantic se integra con el LLM
+        self.structured_llm = self.llm.with_structured_output(ContractChangeOutput)
+        
+        self.prompt = ChatPromptTemplate.from_messages([
+            ("system", "Eres un Especialista en Auditoría Legal. Extrae cambios precisos en formato JSON."),
+            ("human", "MAPA: {context_map}\n\nORIGINAL: {original_text}\n\nADENDA: {adenda_text}")
+        ])
 
-    def run(self, context_map, original_text, amendment_text, parent_trace):
-        span = parent_trace.span(name="extraction_agent")
-        
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            response_format={"type": "json_object"},
-            messages=[
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": f"CONTEXTO: {context_map}\n\nTEXTOS:\nOriginal: {original_text}\nAdenda: {amendment_text}"}
-            ]
-        )
-        
-        raw_json = response.choices[0].message.content
-        # Validación Pydantic
-        validated_data = ContractChangeOutput.model_validate_json(raw_json)
-        
-        span.end(output=validated_data.model_dump())
-        return validated_data
+    def get_chain(self):
+        return self.prompt | self.structured_llm

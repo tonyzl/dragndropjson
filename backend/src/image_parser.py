@@ -9,7 +9,7 @@ from PIL import Image
 from typing import List
 
 # Pydantic Schema for structured output
-from src.models import FormFields
+#from src.models import FormFields
 
 from langfuse import observe
 
