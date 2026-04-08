@@ -1,6 +1,11 @@
-# File Word Extractor
 
-Upload **two files** (PDF or images) and get back a JSON well formatted usig pydantic and with legal advices.
+
+# 🚀 LegalMove: Agente Autónomo de Comparación de Contratos
+
+Este sistema utiliza Inteligencia Artificial multimodal y una arquitectura de **Multi-Agentes** para automatizar la auditoría de contratos legales. El pipeline procesa documentos originales y sus adendas para extraer cambios, evaluar impactos y generar reportes estructurados.
+
+---
+
 
 ## Stack
 
@@ -11,11 +16,7 @@ Upload **two files** (PDF or images) and get back a JSON well formatted usig pyd
 
 ---
 
-# 🚀 LegalMove: Agente Autónomo de Comparación de Contratos
 
-Este sistema utiliza Inteligencia Artificial multimodal y una arquitectura de **Multi-Agentes** para automatizar la auditoría de contratos legales. El pipeline procesa documentos originales y sus adendas para extraer cambios, evaluar impactos y generar reportes estructurados.
-
----
 
 ## 🏗️ Flujo del Pipeline (Arquitectura)
 
