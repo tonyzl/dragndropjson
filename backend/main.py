@@ -32,7 +32,7 @@ app.add_middleware(
 )
 
 @app.post("/extract")
-@observe(name="init_pipeline for contract comparison LegalMove", as_type="generation")
+@observe(name="init_pipeline for LegalMove", as_type="generation")
 async def extract_words(
     file1: UploadFile = File(...),
     file2: UploadFile = File(...)

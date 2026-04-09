@@ -157,9 +157,9 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <div className="header__tag">v1.0 · GPT-4o ENGINE</div>
+        <div className="header__tag">v1.0 · GPT-4o !!! </div>
         <h1 className="header__title">LEGAL<br />MOVE</h1>
-        <p className="header__sub">Drop two files. Get every word as JSON.</p>
+        <p className="header__sub">Pasa dos documentos. Obtén asesoria legal de primera!!!.</p>
       </header>
 
       <main className="main">
@@ -181,7 +181,7 @@ export default function App() {
               {loading ? (
                 <span className="spinner-text">PROCESSING<span className="dots">...</span></span>
               ) : (
-                'GENERATE JSON →'
+                'GENERAR RESUMEN LEGAL   →'
               )}
             </button>
           </div>
