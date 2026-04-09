@@ -31,9 +31,7 @@ graph TD
     Agent2 --> Validation[Validación Pydantic]
     Validation --> Output([JSON Final Consolidado])
 
-    style Agent1 fill:#f9f,stroke:#333,stroke-width:2px
-    style Agent2 fill:#bbf,stroke:#333,stroke-width:2px
-    style Validation fill:#dfd,stroke:#333,stroke-width:2px
+
 
 ```    
 
