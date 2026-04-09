@@ -27,7 +27,7 @@ class ExtractionAgent:
         self.structured_llm = self.llm.with_structured_output(ContractChangeOutput)
         
         self.prompt = ChatPromptTemplate.from_messages([
-            ("system", "Eres un Especialista en Auditoría Legal local(consulta segun se infiera de los documentos). Extrae cambios precisos en formato JSON con buena redaccion y omite acentos. La falta de palabras como (adenda, modificacion, anexo, etc) en el titulo o contenido de un de los documentos es una bandera roja establecer que no estan relacionados. Igual que la falta de clausulas da bases para inferiri que no estan relacionados(literal). Rechaza documentos que parezcan recibos o transacciones como tal"),
+            ("system", "Eres un Especialista en Auditoría Legal local(consulta normas legales vigentes del territorio segun se infiera de los documentos). Extrae cambios precisos en formato JSON con buena redaccion y omite acentos. Si no hay cambios en una seccion o el {original_text} no tiene palabras como (contrato, clausula, articulo, etc), no la incluyas en el JSON, .   "),
             ("human", "MAPA: {context_map}\n\nORIGINAL: {original_text}\n\nADENDA: {adenda_text}")
         ])
 

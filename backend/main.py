@@ -6,10 +6,15 @@ from fastapi.responses import JSONResponse
 
 from langfuse import observe
 
+
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from pydantic import BaseModel, Field
+
 # Importación de parsers propios
 from src.image_parser import extract_from_pdf, extract_from_image
 
-# IMPORTACIÓN CORREGIDA: Solo lo que existe en src.models
+#Modelo de datos y agentes
 from src.models import ContractChangeOutput
 from src.agents.contextualization_agent import ContextualizationAgent
 from src.agents.extraction_agent import ExtractionAgent
@@ -30,6 +35,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Esquema para forzar una respuesta booleana estructurada
+class DocumentValidation(BaseModel):
+    is_legal_document: bool = Field(description="True si el texto pertenece a un contrato, adenda o documento legal, False si es basura o imágenes irrelevantes.")
+    detected_language: str = Field(description="Idioma detectado (ES, EN, FR, etc.)")
+
+def validate_legal_nature(text_sample: str):
+    # Solo enviamos los primeros 500 caracteres para ahorrar tokens
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0) # gpt-4o-mini es perfecto y barato para esto
+    structured_llm = llm.with_structured_output(DocumentValidation)
+    
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "Eres un experto en clasificación de documentos multilingüe. Tu única tarea es determinar si el texto proporcionado tiene naturaleza legal (contratos, acuerdos, adendas) sin importar el idioma."),
+        ("user", "Analiza este extracto y determina si es un documento legal: {sample}")
+    ])
+    
+    chain = prompt | structured_llm
+    return chain.invoke({"sample": text_sample[:500]})
+
 
 @app.post("/extract")
 @observe(name="init_pipeline for LegalMove", as_type="generation")
@@ -54,6 +79,24 @@ async def extract_words(
             "word_count": len(words),
             "words": words
         }
+
+    # --- PASO INTERMEDIO: Validación Multilingüe ---
+    for filename, info in results_parsing.items():
+        sample_text = " ".join(info['words'][:100]) # Tomamos una muestra
+        
+        validation = validate_legal_nature(sample_text)
+        
+        if not validation.is_legal_document:
+            return JSONResponse(
+                status_code=422,
+                content={
+                    "legal_analysis": {
+                        "summary_of_the_change": f"ARCHIVO RECHAZADO: El documento '{filename}' no fue reconocido como un texto legal válido (Idioma detectado: {validation.detected_language}).",
+                        "sections_changed": [],
+                        "topics_touched": ["Fallo de Validación"]
+                    }
+                }
+            )    
 
     # 2. Preparación para Agentes
     listas = [info['words'] for info in results_parsing.values()]
