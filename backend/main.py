@@ -4,7 +4,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from langfuse import observe
+from langfuse import observe,get_client
 
 
 from langchain_openai import ChatOpenAI
@@ -36,6 +36,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+langfuse = get_client()
 
 # Esquema para forzar una respuesta booleana estructurada
 class DocumentValidation(BaseModel):
@@ -57,29 +58,48 @@ def validate_legal_nature(text_sample: str):
 
 
 @app.post("/extract")
-@observe(name="init_pipeline for LegalMove", as_type="generation")
+
 async def extract_words(
     file1: UploadFile = File(...),
     file2: UploadFile = File(...)
 ):
+    #Implementing Langfuse Tracing
+    span = langfuse.start_observation(name="init_pipeline for LegalMove")
     results_parsing = {}
 
+
+    step1_read_files_span = span.start_observation(name="read_files", as_type="generation")
     # 1. Parsing Multimodal / gpt-4o
     for upload_file in [file1, file2]:
         content = await upload_file.read()
         filename = upload_file.filename or "unknown"
         
-        # Extracción de palabras (devuelve lista de strings)
-        if filename.lower().endswith(".pdf"):
-            words = extract_from_pdf(content)
-        else:
-            words = extract_from_image(content)
+        try: 
+            # Extracción de palabras (devuelve lista de strings)
+            if filename.lower().endswith(".pdf"):
+                words = extract_from_pdf(content)
+            else:
+                words = extract_from_image(content)
+        except Exception as e:
+            return JSONResponse(
+                status_code=422,
+                content={
+                    "legal_analysis": {
+                        "summary_of_the_change": f"ARCHIVO RECHAZADO: El documento '{filename}' no fue reconocido como un texto legal válido (Idioma detectado: {validation.detected_language}).",
+                        "sections_changed": [],
+                        "topics_touched": ["Fallo de Validación"]
+                    }
+                }
+            )    
 
         results_parsing[filename] = {
             "word_count": len(words),
             "words": words
         }
+    step1_read_files_span.end()
 
+
+    step2_garbage_collector_span = span.start_observation(name="garbage_collector", as_type="generation")
     # --- PASO INTERMEDIO: Validación Multilingüe ---
     for filename, info in results_parsing.items():
         sample_text = " ".join(info['words'][:100]) # Tomamos una muestra
@@ -97,7 +117,10 @@ async def extract_words(
                     }
                 }
             )    
+    step2_garbage_collector_span.end()
 
+
+    step3_prepapring_texts_span = span.start_observation(name="prepapring_texts", as_type="generation")
     # 2. Preparación para Agentes
     listas = [info['words'] for info in results_parsing.values()]
     if len(listas) < 2:
@@ -105,29 +128,40 @@ async def extract_words(
     
     texto_contrato = " ".join(listas[0])
     texto_adenda = " ".join(listas[1])
+    step3_prepapring_texts_span.end()
 
     # 3. Flujo de Agentes 
     
+    step4_contextualization_agent_span = span.start_observation(name="contextualization_agent", as_type="generation")
     # Agente 1: Contexto
     agente1 = ContextualizationAgent()
     context_response = agente1.get_chain().invoke({
         "contrato_text": texto_contrato, 
         "adenda_text": texto_adenda
     })
+    step4_contextualization_agent_span.end()
 
+    step5_extraction_agent_span = span.start_observation(name="extraction_agent", as_type="generation")
     # Agente 2: Extracción (JSON Estructurado)
     agente2 = ExtractionAgent()
+    print(context_response.content)
     analisis_legal = agente2.get_chain().invoke({
         "context_map": context_response.content,
         "original_text": texto_contrato,
         "adenda_text": texto_adenda
     })
+    step5_extraction_agent_span.end()
 
+    
+    step6_consolidated_result_span = span.start_observation(name="consolidated_result", as_type="generation")
     # 4. Resultado Consolidado
     return JSONResponse(content={
         "document_data": results_parsing,
         "legal_analysis": analisis_legal.model_dump()
     })
+    step6_consolidated_result_span.end()
+    
+    span.end()
 
 @app.get("/health")
 def health():
