@@ -58,18 +58,18 @@ def validate_legal_nature(text_sample: str):
 
 
 @app.post("/extract")
-
+@observe(name="init_pipeline", as_type="generation")
 async def extract_words(
     file1: UploadFile = File(...),
     file2: UploadFile = File(...)
 ):
     #Implementing Langfuse Tracing
-    span = langfuse.start_observation(name="init_pipeline for LegalMove")
+    span = langfuse.start_observation(name="start_pipeline")
     results_parsing = {}
 
 
-    step1_read_files_span = span.start_observation(name="read_files", as_type="generation")
-    # 1. Parsing Multimodal / gpt-4o
+    step1_read_files_span = span.start_observation(name="step1_read_files", as_type="generation")
+    # Parsing Multimodal / gpt-4o
     for upload_file in [file1, file2]:
         content = await upload_file.read()
         filename = upload_file.filename or "unknown"
@@ -99,7 +99,7 @@ async def extract_words(
     step1_read_files_span.end()
 
 
-    step2_garbage_collector_span = span.start_observation(name="garbage_collector", as_type="generation")
+    garbage_collector_span = span.start_observation(name="garbage_collector", as_type="generation")
     # --- PASO INTERMEDIO: Validación Multilingüe ---
     for filename, info in results_parsing.items():
         sample_text = " ".join(info['words'][:100]) # Tomamos una muestra
@@ -117,31 +117,31 @@ async def extract_words(
                     }
                 }
             )    
-    step2_garbage_collector_span.end()
+    garbage_collector_span.end()
 
 
-    step3_prepapring_texts_span = span.start_observation(name="prepapring_texts", as_type="generation")
-    # 2. Preparación para Agentes
+    step2_prepapring_texts_span = span.start_observation(name="step2_prepapring_texts", as_type="generation")
+    # Preparación para Agentes
     listas = [info['words'] for info in results_parsing.values()]
     if len(listas) < 2:
         raise HTTPException(status_code=400, detail="Se necesitan dos archivos.")
     
     texto_contrato = " ".join(listas[0])
     texto_adenda = " ".join(listas[1])
-    step3_prepapring_texts_span.end()
+    step2_prepapring_texts_span.end()
 
-    # 3. Flujo de Agentes 
+    # Flujo de Agentes 
     
-    step4_contextualization_agent_span = span.start_observation(name="contextualization_agent", as_type="generation")
+    step3_contextualization_agent_span = span.start_observation(name="step3_contextualization_agent", as_type="generation")
     # Agente 1: Contexto
     agente1 = ContextualizationAgent()
     context_response = agente1.get_chain().invoke({
         "contrato_text": texto_contrato, 
         "adenda_text": texto_adenda
     })
-    step4_contextualization_agent_span.end()
+    step3_contextualization_agent_span.end()
 
-    step5_extraction_agent_span = span.start_observation(name="extraction_agent", as_type="generation")
+    step4_extraction_agent_span = span.start_observation(name="step4_extraction_agent", as_type="generation")
     # Agente 2: Extracción (JSON Estructurado)
     agente2 = ExtractionAgent()
     print(context_response.content)
@@ -150,17 +150,16 @@ async def extract_words(
         "original_text": texto_contrato,
         "adenda_text": texto_adenda
     })
-    step5_extraction_agent_span.end()
+    step4_extraction_agent_span.end()
 
     
-    step6_consolidated_result_span = span.start_observation(name="consolidated_result", as_type="generation")
+    
     # 4. Resultado Consolidado
     return JSONResponse(content={
         "document_data": results_parsing,
         "legal_analysis": analisis_legal.model_dump()
     })
-    step6_consolidated_result_span.end()
-    
+
     span.end()
 
 @app.get("/health")
