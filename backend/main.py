@@ -82,14 +82,8 @@ async def extract_words(
                 words = extract_from_image(content)
         except Exception as e:
             return JSONResponse(
-                status_code=422,
-                content={
-                    "legal_analysis": {
-                        "summary_of_the_change": f"ARCHIVO RECHAZADO: El documento '{filename}' no fue reconocido como un texto legal válido (Idioma detectado: {validation.detected_language}).",
-                        "sections_changed": [],
-                        "topics_touched": ["Fallo de Validación"]
-                    }
-                }
+                status_code=400,
+                detail=f"Unsupported file type for '{filename}'. Only PDF and images are supported."
             )    
 
         results_parsing[filename] = {
