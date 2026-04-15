@@ -38,6 +38,10 @@ app.add_middleware(
 
 langfuse = get_client()
 
+
+
+
+
 # Esquema para forzar una respuesta booleana estructurada
 class DocumentValidation(BaseModel):
     is_legal_document: bool = Field(description="True si el texto pertenece a un contrato, adenda o documento legal, False si es basura o imágenes irrelevantes.")
@@ -64,11 +68,11 @@ async def extract_words(
     file2: UploadFile = File(...)
 ):
     #Implementing Langfuse Tracing
-    span = langfuse.start_observation(name="start_pipeline")
+    span = langfuse.start_observation(as_type="generation", name="span_pipeline", model="gpt-4o")
     results_parsing = {}
 
 
-    step1_read_files_span = span.start_observation(name="step1_read_files", as_type="generation")
+    step1_read_files_span = span.start_observation(name="step1_read_files", as_type="generation", model="gpt-4o") 
     # Parsing Multimodal / gpt-4o
     for upload_file in [file1, file2]:
         content = await upload_file.read()
@@ -78,6 +82,7 @@ async def extract_words(
             # Extracción de palabras (devuelve lista de strings)
             if filename.lower().endswith(".pdf"):
                 words = extract_from_pdf(content)
+                
             else:
                 words = extract_from_image(content)
         except Exception as e:
@@ -93,7 +98,7 @@ async def extract_words(
     step1_read_files_span.end()
 
 
-    garbage_collector_span = span.start_observation(name="garbage_collector", as_type="generation")
+    garbage_collector_span = span.start_observation(name="garbage_collector", as_type="generation",model="gpt-4o")
     # --- PASO INTERMEDIO: Validación Multilingüe ---
     for filename, info in results_parsing.items():
         sample_text = " ".join(info['words'][:100]) # Tomamos una muestra
@@ -114,7 +119,7 @@ async def extract_words(
     garbage_collector_span.end()
 
 
-    step2_prepapring_texts_span = span.start_observation(name="step2_prepapring_texts", as_type="generation")
+    step2_prepapring_texts_span = span.start_observation(name="step2_prepapring_texts", as_type="generation",model="gpt-4o")
     # Preparación para Agentes
     listas = [info['words'] for info in results_parsing.values()]
     if len(listas) < 2:
@@ -126,33 +131,45 @@ async def extract_words(
 
     # Flujo de Agentes 
     
-    step3_contextualization_agent_span = span.start_observation(name="step3_contextualization_agent", as_type="generation")
+    step3_contextualization_agent_span = span.start_observation(name="step3_contextualization_agent", as_type="generation",model="gpt-4o")
     # Agente 1: Contexto
     agente1 = ContextualizationAgent()
     context_response = agente1.get_chain().invoke({
         "contrato_text": texto_contrato, 
         "adenda_text": texto_adenda
     })
+    data_a1=context_response.response_metadata
+    usage_a1 = data_a1.get("token_usage")    
     step3_contextualization_agent_span.end()
 
-    step4_extraction_agent_span = span.start_observation(name="step4_extraction_agent", as_type="generation")
+    step4_extraction_agent_span = span.start_observation(name="step4_extraction_agent", as_type="generation",model="gpt-4o")
     # Agente 2: Extracción (JSON Estructurado)
     agente2 = ExtractionAgent()
-    print(context_response.content)
+    #print(context_response.content)
     analisis_legal = agente2.get_chain().invoke({
         "context_map": context_response.content,
         "original_text": texto_contrato,
         "adenda_text": texto_adenda
     })
+
     step4_extraction_agent_span.end()
 
+
+    all_usage = {
+        "contextualization_agent_total_tokens": usage_a1['total_tokens'],
+        
+        
+    }
     
     
     # 4. Resultado Consolidado
     return JSONResponse(content={
         "document_data": results_parsing,
-        "legal_analysis": analisis_legal.model_dump()
+        "legal_analysis": analisis_legal.model_dump(),
+        "usage": all_usage,
     })
+
+    
 
     span.end()
 

@@ -243,6 +243,13 @@ export default function App() {
               </div>
             </div>
 
+            <div className="full-json-wrap">
+              <details>
+                <summary>Full JSON response</summary>
+                <pre className="json-view json-view--full">{JSON.stringify(results.usage, null, 2)}</pre>
+              </details>
+            </div>
+
           </section>
         )}
       </main>
