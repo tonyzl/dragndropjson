@@ -4,7 +4,8 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from langfuse import observe,get_client
+from langfuse import observe,get_client, Langfuse
+from langfuse.langchain import CallbackHandler
 
 
 from langchain_openai import ChatOpenAI
@@ -36,7 +37,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-langfuse = get_client()
+langfuse = Langfuse()
+
+langfuse_handler = CallbackHandler()
 
 
 
@@ -58,11 +61,11 @@ def validate_legal_nature(text_sample: str):
     ])
     
     chain = prompt | structured_llm
-    return chain.invoke({"sample": text_sample[:500]})
+    return chain.invoke({"sample": text_sample[:500]},config={"callbacks": [langfuse_handler]})
 
 
 @app.post("/extract")
-@observe(name="init_pipeline", as_type="generation")
+@observe(name="init_pipeline_for_LegalMove", as_type="generation")
 async def extract_words(
     file1: UploadFile = File(...),
     file2: UploadFile = File(...)
@@ -97,7 +100,7 @@ async def extract_words(
         }
     step1_read_files_span.end()
 
-
+    
     garbage_collector_span = span.start_observation(name="garbage_collector", as_type="generation",model="gpt-4o")
     # --- PASO INTERMEDIO: Validación Multilingüe ---
     for filename, info in results_parsing.items():
@@ -117,9 +120,10 @@ async def extract_words(
                 }
             )    
     garbage_collector_span.end()
+    
 
-
-    step2_prepapring_texts_span = span.start_observation(name="step2_prepapring_texts", as_type="generation",model="gpt-4o")
+    
+    #step2_prepapring_texts_span = span.start_observation(name="step2_prepapring_texts", as_type="generation",model="gpt-4o")
     # Preparación para Agentes
     listas = [info['words'] for info in results_parsing.values()]
     if len(listas) < 2:
@@ -127,32 +131,38 @@ async def extract_words(
     
     texto_contrato = " ".join(listas[0])
     texto_adenda = " ".join(listas[1])
-    step2_prepapring_texts_span.end()
+    #step2_prepapring_texts_span.end()
 
     # Flujo de Agentes 
     
-    step3_contextualization_agent_span = span.start_observation(name="step3_contextualization_agent", as_type="generation",model="gpt-4o")
+    step2_contextualization_agent_span = span.start_observation(name="step3_contextualization_agent", as_type="generation",model="gpt-4o")
     # Agente 1: Contexto
     agente1 = ContextualizationAgent()
     context_response = agente1.get_chain().invoke({
         "contrato_text": texto_contrato, 
         "adenda_text": texto_adenda
-    })
+    },config={"callbacks": [langfuse_handler]})
     data_a1=context_response.response_metadata
     usage_a1 = data_a1.get("token_usage")    
-    step3_contextualization_agent_span.end()
+    step2_contextualization_agent_span.end()
 
-    step4_extraction_agent_span = span.start_observation(name="step4_extraction_agent", as_type="generation",model="gpt-4o")
+
+        
+
+    step3_extraction_agent_span = span.start_observation(name="step4_extraction_agent", as_type="generation",model="gpt-4o")
     # Agente 2: Extracción (JSON Estructurado)
     agente2 = ExtractionAgent()
-    #print(context_response.content)
+    print(context_response.content)   
+     
     analisis_legal = agente2.get_chain().invoke({
         "context_map": context_response.content,
         "original_text": texto_contrato,
-        "adenda_text": texto_adenda
-    })
+        "adenda_text": texto_adenda,
+        
+    },config={"callbacks": [langfuse_handler]})
+        
 
-    step4_extraction_agent_span.end()
+    step3_extraction_agent_span.end()
 
 
     all_usage = {

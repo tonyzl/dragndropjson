@@ -12,7 +12,7 @@ from typing import List
 #from src.models import FormFields
 
 from langfuse import observe, get_client
-
+from langfuse.langchain import CallbackHandler
 
 
 
@@ -32,6 +32,7 @@ LANGFUSE_HOST = os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com")
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 langfuse = get_client()
+langfuse_handler = CallbackHandler()
 
 
 def extract_words_from_text(text: str) -> List[str]:
@@ -45,7 +46,7 @@ def extract_words_from_text(text: str) -> List[str]:
 def extract_from_pdf(file_bytes: bytes) -> list[str]:
     #client = OpenAI()
 
-    span = langfuse.start_observation(as_type="generation", name="span_extract_from_pdf", model="gpt-4o") 
+    #span = langfuse.start_observation(as_type="generation", name="span_extract_from_pdf", model="gpt-4o") 
     doc = fitz.open(stream=file_bytes, filetype="pdf")
     
     all_words = []
@@ -55,7 +56,7 @@ def extract_from_pdf(file_bytes: bytes) -> list[str]:
 
     for page in doc:
         # Render page to image (2x zoom for better resolution)
-        mat = fitz.Matrix(2, 2)
+        mat = fitz.Matrix(0.5, 0.5)
         pix = page.get_pixmap(matrix=mat)
         img_bytes = pix.tobytes("jpeg")
         base64_image = base64.b64encode(img_bytes).decode("utf-8")
@@ -77,31 +78,26 @@ def extract_from_pdf(file_bytes: bytes) -> list[str]:
                     ],
                 }
             ],
+            
         )
 
         raw_text = response.choices[0].message.content
         total_tokens += response.usage.total_tokens
         prompt_tokens += response.usage.prompt_tokens
         completion_tokens += response.usage.completion_tokens
-        
+
+
+        config={"callbacks": [langfuse_handler]}
         all_words.extend(extract_words_from_text(raw_text))
         
 
     doc.close()
     print("los tokens de un pdf...")
     print(f"total_tokens: {total_tokens}")
-    print(f"prompt_tokens: {prompt_tokens}")
-    print(f"completion_tokens: {completion_tokens}")
+    #print(f"prompt_tokens: {prompt_tokens}")
+    #print(f"completion_tokens: {completion_tokens}")
 
-    span.update(
-        usage={
-            "prompt_tokens": prompt_tokens,
-            "completion_tokens": completion_tokens,
-            "total_tokens": total_tokens
-        },
-        model="gpt-4o"
-    )
-    span.end()
+
 
     return all_words
 
@@ -141,7 +137,9 @@ def extract_from_image(file_bytes: bytes) -> List[str]:
 
     print("los tokens de una imagen...")
     print(f"total_tokens: {total_tokens}")
-    print(f"prompt_tokens: {prompt_tokens}")
-    print(f"completion_tokens: {completion_tokens}")
+    #print(f"prompt_tokens: {prompt_tokens}")
+    #print(f"completion_tokens: {completion_tokens}")
+
+    config={"callbacks": [langfuse_handler]}
 
     return extract_words_from_text(text)
